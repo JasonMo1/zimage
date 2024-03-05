@@ -50,3 +50,13 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# vscode configure file(s)
+.vscode*
+
+examples
+
+bin
+
+lena/*.tags
+lena/tst*
