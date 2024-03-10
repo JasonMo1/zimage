@@ -3,6 +3,7 @@ SHELL := /bin/bash
 # Specify the files to compile and the name of the final binary
 SRCS=zimage.c
 BIN=zimage.bin
+LENA=lena/lena_128.bmp
 
 # Directory where source files are and where the binaries will be put
 INPUT_DIR=src
@@ -13,6 +14,11 @@ OUTPUT_DIR=bin
 ifndef ZOS_PATH
 $(error "Please define ZOS_PATH environment variable. It must point to Zeal 8-bit OS source code path.")
 endif
+
+ifndef ZFS_PATH
+$(error "Please define ZFS_PATH environment variable. It must point to ZealFS source code path.")
+endif
+
 ZOS_INCLUDE=$(ZOS_PATH)/kernel_headers/sdcc/include/
 # Regarding the linking process, we will need to specify the path to the crt0 REL file.
 # It contains the boot code for C programs as well as all the C functions performing syscalls.
@@ -39,7 +45,7 @@ SRCS_REL=$(patsubst %.c,%.rel,$(SRCS_OUT_DIR))
 
 .PHONY: all clean
 
-all: clean $(OUTPUT_DIR) $(OUTPUT_DIR)/$(BIN_HEX) $(OUTPUT_DIR)/$(BIN)
+all: clean $(OUTPUT_DIR) $(OUTPUT_DIR)/$(BIN_HEX) $(OUTPUT_DIR)/$(BIN) debug
 	@bash -c 'echo -e "\x1b[32;1mSuccess, binary generated: $(OUTPUT_DIR)/$(BIN)\x1b[0m"'
 
 $(OUTPUT_DIR):
@@ -58,6 +64,13 @@ $(OUTPUT_DIR)/$(BIN_HEX): $(CRT_REL) $(SRCS_REL)
 # Convert the Intel HEX file to an actual binary.
 $(OUTPUT_DIR)/$(BIN):
 	$(OBJCOPY) --input-target=ihex --output-target=binary $(OUTPUT_DIR)/$(BIN_HEX) $(OUTPUT_DIR)/$(BIN)
+
+debug:
+	rm $(ZFS_PATH)/zim_dbg.img
+	$(ZFS_PATH)/zealfs --image=$(ZFS_PATH)/zim_dbg.img --size=64 $(ZFS_PATH)/zfs_mnt
+	cp $(LENA) $(ZFS_PATH)/zfs_mnt/lena.bmp
+	cp $(OUTPUT_DIR)/$(BIN) $(ZFS_PATH)/zfs_mnt/
+	umount $(ZFS_PATH)/zfs_mnt
 
 clean:
 	rm -fr bin/

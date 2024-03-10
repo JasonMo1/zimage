@@ -38,8 +38,8 @@ typedef struct {
 } bmp_infohead_t; 
 
 typedef struct {
-    uint8_t rgbBlue; 
-    uint8_t rgbGreen; 
+    uint8_t rgbBlue;
+    uint8_t rgbGreen;
     uint8_t rgbRed;
     uint8_t rgbReserved;
 } bmp_rgbquad_t;
@@ -54,7 +54,5 @@ typedef struct {
     zos_dev_t bmp_dev;
     bmp_header_t bmp_head;
 } bmp_file_t;
-
-bmp_err_t bmp_open(const char *filename, bmp_file_t *context);
 
 #endif
