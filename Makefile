@@ -3,7 +3,7 @@ SHELL := /bin/bash
 # Specify the files to compile and the name of the final binary
 SRCS=zimage.c
 BIN=zimage.bin
-LENA=lena/lena_128.bmp
+LENA=lena/lena_4.bmp
 
 # Directory where source files are and where the binaries will be put
 INPUT_DIR=src

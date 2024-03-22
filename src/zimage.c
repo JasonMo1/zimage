@@ -96,6 +96,7 @@ bmp_err_t main() {
         return openstatus;
     }
     else {
+        bmp_decode(&avctx);
         return BMP_SUCCESS;
     }
 }
@@ -170,67 +171,38 @@ bmp_err_t bmp_open(const char *filename, bmp_file_t *avctx) {
     printf("biHeight: %lu\n", avctx->bmp_head.bmp_infohead.biHeight);
     printf("biWidth: %lu\n", avctx->bmp_head.bmp_infohead.biWidth);
     printf("biBitCount: %u\n", avctx->bmp_head.bmp_infohead.biBitCount);
+    printf("bfOffBits: %u\n", avctx->bmp_head.bmp_filehead.bfOffBits);
     printf("palette_exist: %d\n", palette_exist);
 
     return BMP_SUCCESS;
 }
 
-// bmp_err_t bmp_decode(bmp_file_t *avctx, void *pixel_array) {
-//     const char ctx[] = SCO_BMP_DEC;
+bmp_err_t bmp_decode(bmp_file_t *avctx) {
+    char ctx[] = SCO_BMP_DEC;
+    // 确保每行像素的大小是4的倍数
+    uint32_t row_size = ((avctx->bmp_head.bmp_infohead.biBitCount * avctx->bmp_head.bmp_infohead.biWidth + 31) / 32) * 4;
+    uint32_t padding = row_size - (avctx->bmp_head.bmp_infohead.biWidth * (avctx->bmp_head.bmp_infohead.biBitCount / 8));
+    seek(avctx->bmp_dev, &avctx->bmp_head.bmp_filehead.bfOffBits, SEEK_SET);
 
-//     // Create an array to store the RGB565 pixels
-//     uint32_t width = avctx->bmp_head.bmp_infohead.biWidth;
-//     uint32_t height = avctx->bmp_head.bmp_infohead.biHeight;
-//     uint16_t *pixels = malloc(width * height * sizeof(uint16_t));
-//     if (pixels == NULL) {
-//         close(avctx->bmp_dev);
-//         printf("%s Error while allocating memory for pixels\n", ctx);
-//         return BMP_ERR_MEMORY;
-//     }
+    for (int32_t y = avctx->bmp_head.bmp_infohead.biHeight - 1; y >= 0; --y) {
+        for (uint32_t x = 0; x < avctx->bmp_head.bmp_infohead.biWidth; ++x) {
+            printf("%s Decoded pixel: %x\n", ctx, bmp_get_pixel(avctx));
+        }
+        // 跳过每行末尾的填充字节
+        if (padding > 0) {
+            uint8_t pad[3];
+            read(avctx->bmp_dev, &pad, &padding);
+        }
+        printf("%s Y: %lu ends\n", ctx, y);
+    }
+}
 
-//     // Read the bmp data and convert to RGB565 format
-//     uint32_t row_size = ((24 * width + 31) / 32) * 4; // The number of bytes in each row of the bmp data, padded to a multiple of 4
-//     uint8_t *row_buffer = malloc(row_size); // A buffer to store one row of bmp data
-//     if (row_buffer == NULL) {
-//         close(avctx->bmp_dev);
-//         free(pixels);
-//         printf("%s Error while allocating memory for row buffer\n", ctx);
-//         return BMP_ERR_MEMORY;
-//     }
+uint16_t bmp_get_pixel(bmp_file_t *avctx) {
+    uint8_t bgr[3];
+    printf("%s R: %x, G: %x, B: %x\n", SCO_BMP_DEC, bgr[2], bgr[1], bgr[0]);
+    read(avctx->bmp_dev, &bgr, sizeof(bgr));
 
-//     // Loop through each row of the bmp data, from bottom to top
-//     for (int i = height - 1; i >= 0; i--) {
-//         // Read one row of bmp data into the buffer
-//         uint16_t bytes_read = row_size;
-//         zos_err_t read_status = read(avctx->bmp_dev, row_buffer, &bytes_read);
-//         if (read_status != ERR_SUCCESS || bytes_read != row_size) {
-//             close(avctx->bmp_dev);
-//             free(pixels);
-//             free(row_buffer);
-//             printf("%s Error while reading bmp data\n", ctx);
-//             return BMP_ERR_FILE;
-//         }
-
-//         // Loop through each pixel in the row, from left to right
-//         for (int j = 0; j < width; j++) {
-//             // Get the RGB values from the buffer, in BGR order
-//             uint8_t b = row_buffer[j * 3];
-//             uint8_t g = row_buffer[j * 3 + 1];
-//             uint8_t r = row_buffer[j * 3 + 2];
-
-//             // Convert the RGB values to RGB565 format, using bit shifting and masking
-//             uint16_t rgb565 = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
-
-//             // Store the RGB565 value in the pixels array, using the row and column index
-//             pixels[i * width + j] = rgb565;
-//         }
-//     }
-
-//     // Close the bmp file and free the row buffer
-//     close(avctx->bmp_dev);
-//     free(row_buffer);
-
-//     // Return the pixels array
-//     return pixels;
-// }
-
+    // 将BGR转换为RGB565格式
+    uint16_t rgb565 = ((bgr[2] >> 3) << 11) | ((bgr[1] >> 2) << 5) | (bgr[0] >> 3);
+    return rgb565;
+}
