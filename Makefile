@@ -45,7 +45,8 @@ SRCS_REL=$(patsubst %.c,%.rel,$(SRCS_OUT_DIR))
 
 .PHONY: all clean
 
-all: clean $(OUTPUT_DIR) $(OUTPUT_DIR)/$(BIN_HEX) $(OUTPUT_DIR)/$(BIN) debug
+all: clean $(OUTPUT_DIR) $(OUTPUT_DIR)/$(BIN_HEX) $(OUTPUT_DIR)/$(BIN)
+	cp $(LENA) $(OUTPUT_DIR)/lena.bmp
 	@bash -c 'echo -e "\x1b[32;1mSuccess, binary generated: $(OUTPUT_DIR)/$(BIN)\x1b[0m"'
 
 $(OUTPUT_DIR):
@@ -65,7 +66,7 @@ $(OUTPUT_DIR)/$(BIN_HEX): $(CRT_REL) $(SRCS_REL)
 $(OUTPUT_DIR)/$(BIN):
 	$(OBJCOPY) --input-target=ihex --output-target=binary $(OUTPUT_DIR)/$(BIN_HEX) $(OUTPUT_DIR)/$(BIN)
 
-debug:
+debug_img:
 	rm $(ZFS_PATH)/zim_dbg.img
 	$(ZFS_PATH)/zealfs --image=$(ZFS_PATH)/zim_dbg.img --size=64 $(ZFS_PATH)/zfs_mnt
 	cp $(LENA) $(ZFS_PATH)/zfs_mnt/lena.bmp
